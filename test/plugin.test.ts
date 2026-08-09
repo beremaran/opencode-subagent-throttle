@@ -7,12 +7,32 @@ const tick = (): Promise<void> => new Promise((resolve) => setImmediate(resolve)
 type Hook = (input: unknown, output: unknown) => Promise<void>
 type EventHook = (input: unknown) => Promise<void>
 
-function makeMockInput(promptCalls: Array<any> = []) {
+interface PromptCall {
+  path: { id: string }
+  body: {
+    noReply: boolean
+    parts: Array<{ type: string; text: string; ignored: boolean }>
+  }
+}
+
+function requireCall(promptCalls: PromptCall[], index: number): PromptCall {
+  const call = promptCalls[index]
+  if (call === undefined) throw new Error(`no prompt call at index ${index}`)
+  return call
+}
+
+function requireTextPart(call: PromptCall): { type: string; text: string; ignored: boolean } {
+  const part = call.body.parts[0]
+  if (part === undefined) throw new Error("no text part")
+  return part
+}
+
+function makeMockInput(promptCalls: PromptCall[] = []) {
   return {
     client: {
       app: { log: () => Promise.resolve() },
       session: {
-        prompt: async (options: any) => {
+        prompt: async (options: PromptCall) => {
           promptCalls.push(options)
           return { data: undefined }
         },
@@ -35,7 +55,7 @@ test("factory returns all hooks", async () => {
   assert.equal(typeof hooks["tool.execute.after"], "function")
   assert.equal(typeof hooks.event, "function")
   assert.equal(typeof hooks.dispose, "function")
-  await hooks.dispose!()
+  await hooks.dispose?.()
 })
 
 test("foreground task fan-out drains FIFO through after hooks", async () => {
@@ -70,7 +90,7 @@ test("foreground task fan-out drains FIFO through after hooks", async () => {
   await complete("c4", "child4")
   await complete("c5", "child5")
   await Promise.all(starts)
-  await hooks.dispose!()
+  await hooks.dispose?.()
 })
 
 test("background task releases after child idle event", async () => {
@@ -99,7 +119,7 @@ test("background task releases after child idle event", async () => {
   })
   await second
   assert.equal(secondDone, true)
-  await hooks.dispose!()
+  await hooks.dispose?.()
 })
 
 test("task error event releases the slot", async () => {
@@ -125,7 +145,7 @@ test("task error event releases the slot", async () => {
   })
   await next
   assert.equal(done, true)
-  await hooks.dispose!()
+  await hooks.dispose?.()
 })
 
 test("non-task tools bypass throttling", async () => {
@@ -142,12 +162,12 @@ test("non-task tools bypass throttling", async () => {
   })
   await tick()
   assert.equal(done, false)
-  await hooks.dispose!()
+  await hooks.dispose?.()
   await second
 })
 
 test("notifyQueue injects queued and started lines", async () => {
-  const promptCalls: Array<any> = []
+  const promptCalls: PromptCall[] = []
   const hooks = await SubagentThrottle(makeMockInput(promptCalls), {
     maxParallel: 1,
     notifyQueue: true,
@@ -166,13 +186,15 @@ test("notifyQueue injects queued and started lines", async () => {
   )
   await tick()
   assert.equal(promptCalls.length, 1)
-  assert.equal(promptCalls[0].path.id, "s")
-  assert.equal(promptCalls[0].body.noReply, true)
-  assert.equal(promptCalls[0].body.parts[0].type, "text")
-  assert.equal(promptCalls[0].body.parts[0].ignored, true)
-  assert.match(promptCalls[0].body.parts[0].text, /queued/)
-  assert.match(promptCalls[0].body.parts[0].text, /position 1/)
-  assert.match(promptCalls[0].body.parts[0].text, /second/)
+  const queuedCall = requireCall(promptCalls, 0)
+  assert.equal(queuedCall.path.id, "s")
+  assert.equal(queuedCall.body.noReply, true)
+  const queuedPart = requireTextPart(queuedCall)
+  assert.equal(queuedPart.type, "text")
+  assert.equal(queuedPart.ignored, true)
+  assert.match(queuedPart.text, /queued/)
+  assert.match(queuedPart.text, /position 1/)
+  assert.match(queuedPart.text, /second/)
 
   await after(
     { tool: "task", sessionID: "s", callID: "c1", args: {} },
@@ -180,12 +202,12 @@ test("notifyQueue injects queued and started lines", async () => {
   )
   await second
   assert.equal(promptCalls.length, 2)
-  assert.match(promptCalls[1].body.parts[0].text, /started/)
-  await hooks.dispose!()
+  assert.match(requireTextPart(requireCall(promptCalls, 1)).text, /started/)
+  await hooks.dispose?.()
 })
 
 test("no injection when notifyQueue is off", async () => {
-  const promptCalls: Array<any> = []
+  const promptCalls: PromptCall[] = []
   const hooks = await SubagentThrottle(makeMockInput(promptCalls), { maxParallel: 1 })
   const before = hooks["tool.execute.before"] as unknown as Hook
 
@@ -196,12 +218,12 @@ test("no injection when notifyQueue is off", async () => {
   )
   await tick()
   assert.equal(promptCalls.length, 0)
-  await hooks.dispose!()
+  await hooks.dispose?.()
   await second
 })
 
 test("background queued line marks background", async () => {
-  const promptCalls: Array<any> = []
+  const promptCalls: PromptCall[] = []
   const hooks = await SubagentThrottle(makeMockInput(promptCalls), {
     maxParallel: 1,
     notifyQueue: true,
@@ -215,13 +237,13 @@ test("background queued line marks background", async () => {
   )
   await tick()
   assert.equal(promptCalls.length, 1)
-  assert.match(promptCalls[0].body.parts[0].text, /, background/)
-  await hooks.dispose!()
+  assert.match(requireTextPart(requireCall(promptCalls, 0)).text, /, background/)
+  await hooks.dispose?.()
   await second
 })
 
 test("non-task tools never trigger notifications", async () => {
-  const promptCalls: Array<any> = []
+  const promptCalls: PromptCall[] = []
   const hooks = await SubagentThrottle(makeMockInput(promptCalls), {
     maxParallel: 1,
     notifyQueue: true,
@@ -232,5 +254,5 @@ test("non-task tools never trigger notifications", async () => {
   await before({ tool: "read", sessionID: "s", callID: "r1" }, { args: {}, output: "", metadata: {} })
   await tick()
   assert.equal(promptCalls.length, 0)
-  await hooks.dispose!()
+  await hooks.dispose?.()
 })

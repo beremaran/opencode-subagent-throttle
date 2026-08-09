@@ -59,7 +59,7 @@ test("Semaphore with max one is serial", async () => {
 test("Semaphore rejects invalid maximums", () => {
   assert.throws(() => new Semaphore(0))
   assert.throws(() => new Semaphore(1.5))
-  assert.throws(() => new Semaphore("2" as any))
+  assert.throws(() => new Semaphore("2" as unknown as number))
 })
 
 test("Semaphore releases are idempotent", async () => {
