@@ -1,7 +1,5 @@
 # opencode-subagent-throttle
 
-> **⚠️ Archived** — This repository is archived. Its functionality (subagent throttling) has been consolidated into the [opencode-beanie-plugin](https://github.com/beremaran/opencode-beanie-plugin) (feature: `throttle`). Please use that instead.
-
 [![npm](https://img.shields.io/npm/v/@beremaran/opencode-subagent-throttle.svg)](https://www.npmjs.com/package/@beremaran/opencode-subagent-throttle)
 [![License](https://img.shields.io/npm/l/@beremaran/opencode-subagent-throttle.svg)](LICENSE)
 [![CI](https://github.com/beremaran/opencode-subagent-throttle/actions/workflows/ci.yml/badge.svg)](https://github.com/beremaran/opencode-subagent-throttle/actions/workflows/ci.yml)
