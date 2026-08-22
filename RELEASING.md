@@ -2,7 +2,8 @@
 
 Releases are **tag-triggered from CI**. There is no local build or publish step —
 pushing a `vX.Y.Z` tag runs `.github/workflows/publish.yml`, which publishes to
-npm (with provenance) and creates the GitHub Release.
+npm through GitHub Actions trusted publishing (with provenance) and creates the
+GitHub Release.
 
 ## Steps
 
@@ -33,13 +34,16 @@ npm (with provenance) and creates the GitHub Release.
 5. **Watch the publish workflow.** It verifies the tag matches `package.json`
    and that `CHANGELOG.md` contains the version, runs `npm run check`,
    inspects the packed tarball, smoke-tests it from a clean consumer install,
-   publishes to npm via `NPM_TOKEN` (with npm provenance), and creates a
+   publishes to npm through trusted publishing (with npm provenance), and creates a
    GitHub Release whose body is the CHANGELOG section for the version.
 
 ## Notes
 
 - The tag must be exactly `v` + the `package.json` version (e.g. version
   `0.1.0` → tag `v0.1.0`); the workflow fails otherwise.
+- Configure npm trusted publishing for this repository and the `npm-publish`
+  GitHub environment before pushing a release tag. The workflow uses GitHub's
+  OIDC token and does not read an `NPM_TOKEN` secret.
 - A local `npm publish` is not the supported flow and will not produce npm
   provenance. `prepublishOnly` runs `npm run check` if you ever do, but prefer
   the tag flow.

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.0 - 2026-08-22
+
+### Added
+
+- OpenCode 2 Promise plugin support through the package root `{ id, setup }`
+  entrypoint, while preserving the OpenCode 1 callable server entrypoint at
+  `./server` and `src/index.ts`.
+- OpenCode 2 task/subagent throttling with FIFO queueing, failure release,
+  background-session idle release, and watchdog protection.
+- Trusted-publishing npm workflow using GitHub Actions OIDC and npm
+  provenance.
+
+### Changed (Breaking)
+
+- OpenCode 2 is now the package root entrypoint. OpenCode 1 package users
+  should continue using the legacy `plugin` config field, which resolves the
+  callable `main`/`./server` entrypoint.
+
 ## [Unreleased]
 
 ### Added

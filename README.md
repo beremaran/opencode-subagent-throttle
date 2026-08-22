@@ -23,7 +23,8 @@ Add the plugin to `opencode.json`. The plugin entry file is TypeScript source an
 }
 ```
 
-If the plugin is published to npm or GitHub, the string form works too, including options in the tuple:
+For OpenCode 1, if the plugin is published to npm, the string form works too,
+including options in the tuple:
 
 ```json
 {
@@ -33,7 +34,23 @@ If the plugin is published to npm or GitHub, the string form works too, includin
 }
 ```
 
-For a GitHub release, use a reference such as `"github:beremaran/opencode-subagent-throttle#v0.1.0"` in place of the package name.
+OpenCode 2 uses the plural `plugins` field and the package root's `{ id, setup }`
+entrypoint:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    {
+      "package": "@beremaran/opencode-subagent-throttle",
+      "options": { "maxParallel": 2, "mode": "session" }
+    }
+  ]
+}
+```
+
+For a local OpenCode 2 plugin, use `"./src/v2.ts"`. The legacy OpenCode 1
+entrypoint remains `"./src/index.ts"` (or the package's `./server` export).
 
 Restart OpenCode after adding the plugin because configuration is loaded at startup.
 
@@ -68,7 +85,14 @@ If a task call errors, for example because of a depth limit, unknown agent, or p
 
 ## Queue Notifications
 
-Set `notifyQueue: true` to make the throttle visible in the transcript. When a task has to wait for a slot, the plugin posts a synthetic line into the parent session via the OpenCode API. The line shows the task's FIFO position, how many tasks are running, and the total in the pool. When the queued task finally gets a slot, a second line announces that it started. Lines for background tasks include `, background`.
+Set `notifyQueue: true` to make the throttle visible in the OpenCode 1
+transcript. When a task has to wait for a slot, the plugin posts a synthetic
+line into the parent session via the OpenCode API. The line shows the task's
+FIFO position, how many tasks are running, and the total in the pool. When the
+queued task finally gets a slot, a second line announces that it started. Lines
+for background tasks include `, background`. OpenCode 2 does not currently
+expose the ignored/no-reply transcript insertion used by this option, so it is
+skipped there with a warning.
 
 These notes are sent with `noReply: true`, so the agent loop is not triggered; they are purely informational. They are also sent with `ignored: true`, so they show in the TUI but are excluded from the model's context and never consume tokens or influence the agent.
 
@@ -77,14 +101,19 @@ Each queued task can add up to two transcript lines, so heavy fan-out produces t
 ## Caveats
 
 - Queued task calls appear as a running tool call in the UI while they wait. The model's tool output does not expose queue status.
-- With `notifyQueue: true`, queue status appears as user-message-style lines in the transcript rather than inside the tool call's own UI box. The plugin cannot repaint a running tool call's status; see Queue Notifications above.
+- With `notifyQueue: true` on OpenCode 1, queue status appears as
+  user-message-style lines in the transcript rather than inside the tool
+  call's own UI box. The plugin cannot repaint a running tool call's status;
+  see Queue Notifications above.
 - `"session"` mode throttles per session. A parent agent and each subagent have their own pool.
 - This throttles concurrency, not rate. It limits how many tasks run simultaneously, not how many tasks can be created over time.
 - The plugin throttles only the `task` tool, not other tools.
 
 ## Project Structure
 
-- `src/index.ts` — plugin entry, factory, and hooks.
+- `src/index.ts` — OpenCode 1 plugin factory and hooks.
+- `src/v2.ts` — OpenCode 2 `{ id, setup }` adapter.
+- `src/v1.ts` — OpenCode 1 package entrypoint.
 - `src/queue.ts` — framework-independent FIFO semaphore.
 - `src/manager.ts` — slot manager for active slots, background idle watchers, error release, and the watchdog.
 - `test/` — Node test runner tests.

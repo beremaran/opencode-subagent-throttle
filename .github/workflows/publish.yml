@@ -65,6 +65,7 @@ jobs:
     name: Publish
     needs: guard
     runs-on: ubuntu-latest
+    environment: npm-publish
 
     steps:
       - name: Check out repository
@@ -78,8 +79,6 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Verify package and release tag
         run: |
@@ -104,14 +103,18 @@ jobs:
       - name: Inspect package contents
         run: |
           # Assert the packed tarball contains exactly the expected files:
-          # CHANGELOG.md, LICENSE, README.md, package.json, and the three
-          # source modules under src/.
+          # CHANGELOG.md, LICENSE, README.md, package.json, and the source
+          # modules under src/.
           npm pack --dry-run --json > pack-info.json
           node --input-type=module -e '
             import { readFileSync } from "node:fs"
             const [entry] = JSON.parse(readFileSync("pack-info.json", "utf8"))
             const actual = entry.files.map((f) => f.path).sort()
-            const expected = ["CHANGELOG.md", "LICENSE", "README.md", "package.json", "src/index.ts", "src/manager.ts", "src/queue.ts"].sort()
+            const expected = [
+              "CHANGELOG.md", "LICENSE", "README.md", "package.json",
+              "src/index.ts", "src/manager.ts", "src/queue.ts",
+              "src/v1.ts", "src/v2.ts",
+            ].sort()
             if (JSON.stringify(actual) !== JSON.stringify(expected)) {
               console.error("packed file mismatch")
               console.error("expected: " + expected.join(", "))
@@ -130,15 +133,16 @@ jobs:
           # the most faithful smoke test and avoids Node's type-stripping
           # restriction for .ts files under node_modules
           # (ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING): Bun natively runs
-          # the raw .ts main. The import resolves by package name and asserts
-          # the default export is a function.
+          # the raw .ts entrypoints. The import resolves by package name and
+          # asserts the root is the OpenCode 2 object while ./server remains
+          # the callable OpenCode 1 entrypoint.
           REPO_ROOT="$PWD"
           TARBALL="$(npm pack --silent)"
           CONSUMER_DIR="$(mktemp -d)"
           cd "$CONSUMER_DIR"
           npm init -y
           npm install "$REPO_ROOT/$TARBALL"
-          bun -e "await import('@beremaran/opencode-subagent-throttle').then(m => { if (typeof m.default !== 'function') process.exit(1) })"
+          bun -e "const v2 = await import('@beremaran/opencode-subagent-throttle'); if (v2.default?.id !== '@beremaran/opencode-subagent-throttle' || typeof v2.default?.setup !== 'function') process.exit(1); const v1 = await import('@beremaran/opencode-subagent-throttle/server'); if (typeof v1.default !== 'function') process.exit(1)"
 
       - name: Extract CHANGELOG section for release body
         run: |
