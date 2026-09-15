@@ -1,6 +1,5 @@
 # opencode-subagent-throttle
 
-[![License](https://img.shields.io/npm/l/@beremaran/opencode-subagent-throttle.svg)](LICENSE)
 [![CI](https://github.com/beremaran/opencode-subagent-throttle/actions/workflows/ci.yml/badge.svg)](https://github.com/beremaran/opencode-subagent-throttle/actions/workflows/ci.yml)
 
 An OpenCode plugin that limits concurrent `task` and `subagent` tool calls. Excess calls remain queued in FIFO order; they are never rejected or silently dropped.
@@ -135,8 +134,8 @@ There is no build step: OpenCode loads the TypeScript entrypoints directly.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for getting started, manual testing,
-and test guidance. [RELEASING.md](RELEASING.md) documents the tag-triggered
-release flow, and [SECURITY.md](SECURITY.md) covers the security policy.
+and test guidance. [RELEASING.md](RELEASING.md) documents the GitHub release
+flow, and [SECURITY.md](SECURITY.md) covers the security policy.
 
 ## Related
 

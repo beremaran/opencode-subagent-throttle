@@ -1,10 +1,6 @@
 {
   "name": "@beremaran/opencode-subagent-throttle",
   "version": "0.2.1",
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
   "description": "OpenCode plugin that limits concurrent task and subagent calls with FIFO queueing.",
   "type": "module",
   "sideEffects": false,
@@ -38,8 +34,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test \"test/*.test.ts\"",
     "lint": "biome check src test",
-    "check": "npm run typecheck && npm run lint && npm test",
-    "prepublishOnly": "npm run check"
+    "check": "npm run typecheck && npm run lint && npm test"
   },
   "keywords": [
     "opencode",

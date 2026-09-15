@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Only the latest published version of `@beremaran/opencode-subagent-throttle` is
+Only the latest version of `@beremaran/opencode-subagent-throttle` is
 supported with security updates. Older releases are not patched; if you are on
 an earlier release, upgrade to the latest version and confirm the issue is
 resolved before reporting it.

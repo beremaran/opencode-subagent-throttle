@@ -8,10 +8,6 @@
   development documentation.
 - Aligned package and repository metadata with the OpenCode 2 package entrypoint.
 
-### Fixed
-
-- Updated release tarball validation to include the root `index.ts` entrypoint.
-
 ## 0.2.0 - 2026-08-22
 
 ### Added
@@ -21,9 +17,6 @@
   `./server` and `src/index.ts`.
 - OpenCode 2 task/subagent throttling with FIFO queueing, failure release,
   background-session idle release, and watchdog protection.
-- Trusted-publishing npm workflow using GitHub Actions OIDC and npm
-  provenance.
-
 ### Changed (Breaking)
 
 - OpenCode 2 is now the package root entrypoint. OpenCode 1 package users

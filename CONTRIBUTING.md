@@ -59,5 +59,6 @@ Verify with `opencode run --print-logs` that the plugin's warn/error lines
 
 ## Releases
 
-Releases are tag-triggered from CI — see [RELEASING.md](RELEASING.md) for the
-full flow (bump version, add a CHANGELOG entry, tag `vX.Y.Z`, push the tag).
+Releases are tagged from `main` — see [RELEASING.md](RELEASING.md) for the full
+flow (bump version, add a CHANGELOG entry, tag `vX.Y.Z`, push the tag, and create
+the GitHub Release).
