@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1 - 2026-09-15
+
+### Changed
+
+- Updated OpenCode 2 installation, configuration, local loading, runtime, and
+  development documentation.
+- Aligned package and repository metadata with the OpenCode 2 package entrypoint.
+
+### Fixed
+
+- Updated release tarball validation to include the root `index.ts` entrypoint.
+
 ## 0.2.0 - 2026-08-22
 
 ### Added

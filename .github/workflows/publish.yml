@@ -103,15 +103,15 @@ jobs:
       - name: Inspect package contents
         run: |
           # Assert the packed tarball contains exactly the expected files:
-          # CHANGELOG.md, LICENSE, README.md, package.json, and the source
-          # modules under src/.
+          # CHANGELOG.md, LICENSE, README.md, package.json, the OpenCode 2 root
+          # loader, and the source modules under src/.
           npm pack --dry-run --json > pack-info.json
           node --input-type=module -e '
             import { readFileSync } from "node:fs"
             const [entry] = JSON.parse(readFileSync("pack-info.json", "utf8"))
             const actual = entry.files.map((f) => f.path).sort()
             const expected = [
-              "CHANGELOG.md", "LICENSE", "README.md", "package.json",
+              "CHANGELOG.md", "LICENSE", "README.md", "index.ts", "package.json",
               "src/index.ts", "src/manager.ts", "src/queue.ts",
               "src/v1.ts", "src/v2.ts",
             ].sort()
