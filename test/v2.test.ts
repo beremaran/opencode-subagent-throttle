@@ -1,42 +1,27 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import legacyPlugin from "../src/index.ts"
+import plugin from "../src/index.ts"
 
 type V2Event = {
   tool: string
-  sessionID: string
-  id: string
+  sessionID?: string
+  id?: string
   input?: Record<string, unknown>
   status?: "completed" | "error"
   result?: unknown
   error?: unknown
 }
 
-type V2Hook = (event: V2Event) => Promise<void>
-
-type V2Plugin = {
-  id: string
-  setup: (context: {
-    options?: unknown
-    tool: {
-      hook: (name: string, callback: V2Hook) => Promise<{ dispose: () => Promise<void> }>
-    }
-    event?: {
-      subscribe: () => AsyncIterable<unknown>
-    }
-  }) => Promise<undefined | (() => Promise<void>)>
-}
-
-const plugin = (legacyPlugin as typeof legacyPlugin & { readonly v2?: V2Plugin }).v2
+type V2Hook = (event: V2Event) => void | Promise<void>
 
 const tick = (): Promise<void> => new Promise((resolve) => setImmediate(resolve))
 
-test("OpenCode 2 adapter exposes an id/setup plugin", () => {
-  assert.equal(plugin?.id, "@beremaran/opencode-subagent-throttle")
-  assert.equal(typeof plugin?.setup, "function")
+test("plugin exports an id/setup definition", () => {
+  assert.equal(plugin.id, "@beremaran/opencode-subagent-throttle")
+  assert.equal(typeof plugin.setup, "function")
 })
 
-test("OpenCode 2 adapter throttles task hooks and releases on completion", async () => {
+test("plugin throttles task hooks and releases on completion", async () => {
   const hooks = new Map<string, V2Hook>()
   const context = {
     options: { maxParallel: 1 },
@@ -51,7 +36,7 @@ test("OpenCode 2 adapter throttles task hooks and releases on completion", async
       },
     },
   }
-  const cleanup = await plugin?.setup(context)
+  const cleanup = await plugin.setup(context)
   const before = hooks.get("execute.before")
   const after = hooks.get("execute.after")
   assert.ok(before)
@@ -59,7 +44,7 @@ test("OpenCode 2 adapter throttles task hooks and releases on completion", async
 
   await before({ tool: "task", sessionID: "s", id: "c1", input: {} })
   let secondStarted = false
-  const second = before({ tool: "task", sessionID: "s", id: "c2", input: {} }).then(() => {
+  const second = Promise.resolve(before({ tool: "task", sessionID: "s", id: "c2", input: {} })).then(() => {
     secondStarted = true
   })
   await tick()
@@ -78,9 +63,9 @@ test("OpenCode 2 adapter throttles task hooks and releases on completion", async
   await cleanup?.()
 })
 
-test("OpenCode 2 adapter releases failed tasks", async () => {
+test("plugin releases failed tasks", async () => {
   const hooks = new Map<string, V2Hook>()
-  const cleanup = await plugin?.setup({
+  const cleanup = await plugin.setup({
     options: { maxParallel: 1 },
     tool: {
       hook: async (name: string, callback: V2Hook) => {
@@ -104,7 +89,7 @@ test("OpenCode 2 adapter releases failed tasks", async () => {
   await cleanup?.()
 })
 
-test("OpenCode 2 adapter releases background tasks on idle events", async () => {
+test("plugin releases background tasks on idle events", async () => {
   const hooks = new Map<string, V2Hook>()
   let resolveEvent: ((result: IteratorResult<unknown>) => void) | undefined
   const stream: AsyncIterable<unknown> = {
@@ -115,7 +100,7 @@ test("OpenCode 2 adapter releases background tasks on idle events", async () => 
         }),
     }),
   }
-  const cleanup = await plugin?.setup({
+  const cleanup = await plugin.setup({
     options: { maxParallel: 1 },
     tool: {
       hook: async (name: string, callback: V2Hook) => {
@@ -143,7 +128,7 @@ test("OpenCode 2 adapter releases background tasks on idle events", async () => 
     result: { metadata: { sessionId: "child1" } },
   })
   let secondStarted = false
-  const second = before({ tool: "task", sessionID: "s", id: "bg2", input: {} }).then(() => {
+  const second = Promise.resolve(before({ tool: "task", sessionID: "s", id: "bg2", input: {} })).then(() => {
     secondStarted = true
   })
   await tick()

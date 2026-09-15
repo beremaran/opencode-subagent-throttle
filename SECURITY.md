@@ -33,10 +33,6 @@ the configuration it runs with. Only use the plugin with config you control.
   slot held for a very long time appears as running in the UI; the `maxWaitMs`
   watchdog (default 60 minutes) force-releases slots as a backstop, but any
   config that disables or lengthens it changes that guarantee.
-- **`notifyQueue` injects lines into the session transcript.** When enabled,
-  queued/started lines are posted with `ignored: true` so they do not reach the
-  model's context, but a malicious or misconfigured plugin running alongside
-  this one shares the same transcript surface.
 - **`"global"` mode shares one pool across all sessions.** One session's
   fan-out can starve another session's `task` calls. Prefer the default
   `"session"` mode unless you have a specific reason to share.

@@ -1,19 +1,9 @@
-import type { Plugin } from "@opencode-ai/plugin"
-import type { QueueEventInfo } from "./manager.ts"
 import { ThrottleManager } from "./manager.ts"
-
-export interface SubagentThrottleOptions {
-  maxParallel?: number
-  mode?: "session" | "global"
-  maxWaitMs?: number
-  notifyQueue?: boolean
-}
 
 type NormalizedOptions = {
   maxParallel: number
   mode: "session" | "global"
   maxWaitMs: number
-  notifyQueue: boolean
 }
 
 const DEFAULT_MAX_PARALLEL = 2
@@ -55,12 +45,7 @@ const normalizeOptions = (rawOptions: unknown, warn: (message: string) => void):
           }
           return DEFAULT_MAX_WAIT_MS
         })()
-  const notifyQueue = options.notifyQueue === true
-  if (options.notifyQueue !== undefined && typeof options.notifyQueue !== "boolean") {
-    warn("Invalid notifyQueue; falling back to false.")
-  }
-
-  return { maxParallel, mode, maxWaitMs, notifyQueue }
+  return { maxParallel, mode, maxWaitMs }
 }
 
 const childSessionIDFromResult = (value: unknown): string | undefined => {
@@ -73,100 +58,6 @@ const childSessionIDFromResult = (value: unknown): string | undefined => {
 
   const output = result?.output
   return typeof output === "string" ? /<task id="([^"]+)"/.exec(output)?.[1] : undefined
-}
-
-const describeTask = (info: QueueEventInfo): string => info.description ?? info.callID
-const queuedLine = (info: QueueEventInfo): string =>
-  `⏳ Task queued — position ${info.position ?? "?"} of ${info.running + info.queued} (${info.running} running${info.background ? ", background" : ""}): ${describeTask(info)}`
-const startedLine = (info: QueueEventInfo): string =>
-  `▶ Task started (was queued at position ${info.position ?? "?"}${info.background ? ", background" : ""}): ${describeTask(info)}`
-
-const SubagentThrottle: Plugin = async ({ client }, options = {}) => {
-  const warn = (message: string): void => {
-    try {
-      const result = client.app.log({
-        body: { service: "opencode-subagent-throttle", level: "warn", message },
-      })
-      void Promise.resolve(result).catch(() => undefined)
-    } catch {
-      try {
-        console.warn(message)
-      } catch {
-        // Logging must not affect tool execution.
-      }
-    }
-  }
-
-  const { maxParallel, mode, maxWaitMs, notifyQueue } = normalizeOptions(options, warn)
-
-  const notify = (sessionID: string, text: string): void => {
-    try {
-      const result = client.session.prompt({
-        path: { id: sessionID },
-        body: {
-          noReply: true,
-          parts: [{ type: "text", text, ignored: true }],
-        },
-      })
-      void Promise.resolve(result).catch(() => undefined)
-    } catch {
-      // Notification must never affect tool execution.
-    }
-  }
-
-  const manager = new ThrottleManager({
-    maxParallel,
-    mode,
-    maxWaitMs,
-    onWarn: warn,
-    onQueued: notifyQueue ? (info) => notify(info.sessionID, queuedLine(info)) : undefined,
-    onStarted: notifyQueue ? (info) => notify(info.sessionID, startedLine(info)) : undefined,
-  })
-
-  return {
-    "tool.execute.before": async (input, output) => {
-      if (input.tool !== "task") return
-      const description = typeof output.args?.description === "string" ? output.args.description : undefined
-      await manager.startTask(input.sessionID, input.callID, output.args?.background === true, description)
-    },
-
-    "tool.execute.after": async (input, output) => {
-      if (input.tool !== "task") return
-
-      const childSessionID = childSessionIDFromResult(output)
-      manager.endTask(input.sessionID, input.callID, childSessionID)
-    },
-
-    event: async ({ event }) => {
-      const legacyEvent = event as unknown as { type: string; properties?: unknown }
-      const properties = isRecord(legacyEvent.properties) ? legacyEvent.properties : undefined
-      if (legacyEvent.type === "session.idle") {
-        if (typeof properties?.sessionID === "string") {
-          manager.onSessionIdle(properties.sessionID)
-        }
-        return
-      }
-
-      if (legacyEvent.type === "message.part.updated") {
-        const part = properties?.part
-        if (
-          isRecord(part) &&
-          part.type === "tool" &&
-          part.tool === "task" &&
-          isRecord(part.state) &&
-          part.state.status === "error" &&
-          typeof properties?.sessionID === "string" &&
-          typeof part.callID === "string"
-        ) {
-          manager.onToolError(properties.sessionID, part.callID)
-        }
-      }
-    },
-
-    dispose: async () => {
-      manager.dispose()
-    },
-  }
 }
 
 type V2ToolEvent = {
@@ -205,8 +96,6 @@ export type V2Plugin = {
   readonly id: string
   readonly setup: (context: V2Context) => Promise<undefined | V2Cleanup>
 }
-
-type V2CapablePlugin = typeof SubagentThrottle & { readonly v2?: V2Plugin }
 
 const v2EventSessionID = (event: V2ToolEvent): string | undefined => {
   const sessionID = event.sessionID ?? event.sessionId
@@ -269,7 +158,7 @@ const V2_PLUGIN: V2Plugin = {
         // Logging must not affect tool execution.
       }
     }
-    const { maxParallel, mode, maxWaitMs, notifyQueue } = normalizeOptions(context.options, warn)
+    const { maxParallel, mode, maxWaitMs } = normalizeOptions(context.options, warn)
     const manager = new ThrottleManager({ maxParallel, mode, maxWaitMs, onWarn: warn })
     const hook = context.tool?.hook
     if (hook === undefined) return
@@ -300,12 +189,6 @@ const V2_PLUGIN: V2Plugin = {
     })
     const stopIdleWatcher = await startV2IdleWatcher(context, manager)
 
-    if (notifyQueue) {
-      warn(
-        "notifyQueue is not available through the OpenCode 2 plugin API; continuing without transcript notifications.",
-      )
-    }
-
     return async () => {
       stopIdleWatcher()
       manager.dispose()
@@ -315,13 +198,4 @@ const V2_PLUGIN: V2Plugin = {
   },
 }
 
-// Keep the legacy module's enumerable exports callable for OpenCode 1. OpenCode 2
-// receives the object through the dedicated root entrypoint in src/v2.ts.
-Object.defineProperty(SubagentThrottle as V2CapablePlugin, "v2", {
-  configurable: false,
-  enumerable: false,
-  value: V2_PLUGIN,
-  writable: false,
-})
-
-export default SubagentThrottle
+export default V2_PLUGIN

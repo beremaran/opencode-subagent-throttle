@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 - 2026-09-15
+
+### Changed (Breaking)
+
+- Dropped the legacy OpenCode 1 callable plugin shape and `./server` export;
+  the package now exposes only the OpenCode 2 `{ id, setup }` definition.
+- Removed the OpenCode 1-only `notifyQueue` option.
+
+## [Unreleased]
+
+Nothing yet.
+
 ## 0.2.1 - 2026-09-15
 
 ### Changed
@@ -22,12 +34,6 @@
 - OpenCode 2 is now the package root entrypoint. OpenCode 1 package users
   should continue using the legacy `plugin` config field, which resolves the
   callable `main`/`./server` entrypoint.
-
-## [Unreleased]
-
-### Added
-
-- Nothing yet.
 
 ## 0.1.0 - 2026-08-09
 

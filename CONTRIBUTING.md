@@ -14,7 +14,7 @@ The plugin has no build step — it is raw TypeScript loaded natively by OpenCod
 
 ## Manual testing
 
-The repo root ships an `opencode.json` pre-wired to load `./index.ts` with
+The repo root ships an `opencode.json` pre-wired to load the local package with
 `maxParallel: 2`. Run `opencode` from the repo root, then ask something that
 fans out multiple `task` or `subagent` calls, e.g.:
 
@@ -26,8 +26,6 @@ Expected behavior:
 1. The first `maxParallel` tasks start immediately.
 2. Further `task` calls wait in the FIFO queue and start, in order, as slots
    become available.
-3. With `notifyQueue: true` (not enabled by default in the shipped
-   `opencode.json`), the transcript shows `⏳ Task queued — position …` lines.
 
 Verify with `opencode run --print-logs` that the plugin's warn/error lines
 (service `opencode-subagent-throttle`) are absent when everything works.
@@ -35,14 +33,9 @@ Verify with `opencode run --print-logs` that the plugin's warn/error lines
 ## Writing tests
 
 - Tests live in `test/`: `queue.test.ts` (the semaphore), `manager.test.ts`
-  (the slot manager), `plugin.test.ts` (the OpenCode 1 hooks against a mock
-  `client`), and `v2.test.ts` (the OpenCode 2 adapter). They use `node:test` run via `npm test`
+  (the slot manager), and `v2.test.ts` (the OpenCode 2 plugin). They use
+  `node:test` run via `npm test`
   (`node --experimental-strip-types --test "test/*.test.ts"`).
-- Prefer assertions that are **filter-based, not positional**. In particular,
-  when you assert on the synthetic transcript lines injected by
-  `notifyQueue`, match on message content with `assert.match`, not on an
-  absolute index like `promptCalls[0]` — a notification added earlier in a
-  test's lifecycle would silently break it.
 - Add a test for any behavior you change, and run `npm run check` before
   pushing; CI enforces it.
 
