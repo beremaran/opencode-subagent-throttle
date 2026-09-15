@@ -11,7 +11,7 @@ A clear and concise description of what is broken and what you expected.
 
 **Environment**
 - opencode version: (e.g. `opencode --version`)
-- Plugin version: (e.g. `@beremaran/opencode-subagent-throttle@0.1.0`, or local path commit)
+- Plugin version/spec: (e.g. `github:beremaran/opencode-subagent-throttle`, tag, or local path commit)
 - Node/Bun runtime if relevant:
 
 **Config**
@@ -19,8 +19,11 @@ Paste the relevant part of your `opencode.json` (plugin entry and options; redac
 
 ```json
 {
-  "plugin": [
-    ["@beremaran/opencode-subagent-throttle", { "maxParallel": 2, "mode": "session" }]
+  "plugins": [
+    {
+      "package": "github:beremaran/opencode-subagent-throttle",
+      "options": { "maxParallel": 2, "mode": "session" }
+    }
   ]
 }
 ```

@@ -1,12 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    [
-      "./src/index.ts",
-      {
+  "plugins": [
+    {
+      "package": "./index.ts",
+      "options": {
         "maxParallel": 2,
         "mode": "session"
       }
-    ]
+    }
   ]
 }

@@ -5,15 +5,15 @@
     "access": "public",
     "provenance": true
   },
-  "description": "OpenCode plugin that throttles concurrent task/subagent tool calls by queueing them as pending (never rejecting).",
+  "description": "OpenCode plugin that limits concurrent task and subagent calls with FIFO queueing.",
   "type": "module",
   "sideEffects": false,
-  "main": "./src/v1.ts",
+  "main": "./index.ts",
   "types": "./src/v2.ts",
   "exports": {
     ".": {
       "types": "./src/v2.ts",
-      "default": "./src/v2.ts"
+      "default": "./index.ts"
     },
     "./server": {
       "types": "./src/index.ts",
@@ -22,6 +22,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "index.ts",
     "src",
     "CHANGELOG.md"
   ],
@@ -43,10 +44,11 @@
   "keywords": [
     "opencode",
     "opencode-plugin",
+    "task",
     "subagent",
-    "throttle",
+    "concurrency",
     "queue",
-    "concurrency"
+    "throttle"
   ],
   "author": "Berke Arslan <berke@beremaran.com>",
   "repository": {

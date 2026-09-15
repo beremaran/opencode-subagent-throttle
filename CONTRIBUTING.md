@@ -8,15 +8,15 @@ Thanks for contributing to @beremaran/opencode-subagent-throttle!
 2. `npm install`
 3. `npm run check`
 
-The plugin has no build step — it is raw TypeScript loaded natively by opencode
+The plugin has no build step — it is raw TypeScript loaded natively by OpenCode
 (Bun runtime). `npm run check` runs typecheck (`tsc --noEmit`), lint
 (Biome), and the test suite (Node's built-in test runner).
 
 ## Manual testing
 
-The repo root ships an `opencode.json` pre-wired to load `./src/index.ts` with
+The repo root ships an `opencode.json` pre-wired to load `./index.ts` with
 `maxParallel: 2`. Run `opencode` from the repo root, then ask something that
-fans out multiple `task` calls, e.g.:
+fans out multiple `task` or `subagent` calls, e.g.:
 
 > List the files in this repo and, in parallel, summarize the first lines of
 > each source file.
@@ -35,8 +35,8 @@ Verify with `opencode run --print-logs` that the plugin's warn/error lines
 ## Writing tests
 
 - Tests live in `test/`: `queue.test.ts` (the semaphore), `manager.test.ts`
-  (the slot manager), and `plugin.test.ts` (the plugin hooks against a mock
-  `client`). They use `node:test` run via `npm test`
+  (the slot manager), `plugin.test.ts` (the OpenCode 1 hooks against a mock
+  `client`), and `v2.test.ts` (the OpenCode 2 adapter). They use `node:test` run via `npm test`
   (`node --experimental-strip-types --test "test/*.test.ts"`).
 - Prefer assertions that are **filter-based, not positional**. In particular,
   when you assert on the synthetic transcript lines injected by
